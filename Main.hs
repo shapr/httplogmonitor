@@ -2,14 +2,14 @@
 module Main where
 
 import           Control.Concurrent
-import           Control.Monad         (forever, guard)
-import qualified Data.Attoparsec.Text  as AT
+import           Control.Monad         (forever)
+-- import qualified Data.Attoparsec.Text  as AT
 import qualified Data.ByteString.Char8 as BS
-import           Data.Maybe
+-- import           Data.Maybe
 import qualified Data.Set              as S
 import           Data.Text             hiding (head, length)
 import qualified Data.Text.IO          as TIO
-import           Data.Time.Clock       (UTCTime, addUTCTime, getCurrentTime)
+import           Data.Time.Clock       (getCurrentTime)
 import           LogParser
 import           System.Environment    (getArgs)
 import           System.INotify
@@ -37,10 +37,10 @@ main = do
   args <- getArgs
   let monitorfile = if (length args) < 1 then "/tmp/access.log" else head args
   s <- initState
-  forkIO (alerter s) -- write alerts to the screen
+  _ <- forkIO (alerter s) -- write alerts to the screen
   inotify <- initINotify
   wd <- addWatch inotify [Modify] (BS.pack monitorfile) (parser s monitorfile)
-  getLine -- any key ends the program
+  _ <- getLine -- any key ends the program
   removeWatch wd
 
 alerter :: MonitorState -> IO ()
@@ -48,7 +48,6 @@ alerter (MonitorState m) = forever $
     do
       currentTime <- getCurrentTime
       ms <- takeMVar m
-      let events = getEvents ms
       -- clear
       -- print ("alerting at " <> show currentTime)
       mapM_ print $ getAlerts ms -- print all historical alerts
@@ -83,3 +82,4 @@ detectAlert s threshold = if setsize > maxavg
 
 updateAlerts (Just n) now as = "High traffig generated an alert - hits " <> show n <> ", triggered at " <> show now
     -- where template = “High traffic generated an alert - hits = %d, triggered at %s”
+updateAlerts _ _ _ = error "you did it wrong"

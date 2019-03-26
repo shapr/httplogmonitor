@@ -2,7 +2,6 @@
 {-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
-import           Control.Monad
 import           Data.Attoparsec.Text
 import           Data.Text
 import           Data.Time
@@ -11,7 +10,7 @@ import qualified Hedgehog.Gen                   as Gen
 import qualified Hedgehog.Gen.QuickCheck        as Gen
 import qualified Hedgehog.Range                 as Range
 import           LogParser
-import           Test.QuickCheck.Instances.Time
+import           Test.QuickCheck.Instances.Time ()
 
 prop_roundtrip :: Property
 prop_roundtrip =

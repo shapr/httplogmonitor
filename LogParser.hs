@@ -2,10 +2,8 @@
 {-# LANGUAGE RecordWildCards   #-}
 module LogParser where
 
-import           Data.Attoparsec.Text (Parser (..), char, decimal, parseOnly,
-                                       string, takeWhile)
+import           Data.Attoparsec.Text (Parser, char, decimal, string)
 import qualified Data.Attoparsec.Text as AT
-import           Data.Attoparsec.Time
 import           Data.List            (intercalate)
 import qualified Data.Set             as S
 import           Data.Text            hiding (intercalate)
