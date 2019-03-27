@@ -96,3 +96,12 @@ eventSet t = S.fromList . fromRight $ AT.parseOnly (pLogMessage `AT.sepBy` AT.st
 lastTenMinutes :: UTCTime -> S.Set LogMessage -> S.Set LogMessage
 lastTenMinutes now evSet = S.filter ((>= tenminutesago) . timestamp) evSet -- this needs lenses
     where tenminutesago = addUTCTime (-10 * 60) now
+
+-- if average count of log message is over the threshhhold, return an alert
+detectAlert :: S.Set LogMessage -> Int -> UTCTime -> [Text]
+detectAlert s threshold now =
+    if averageEPS >= threshold
+    then ["High traffic generated an alert - hits " <> (pack $ show averageEPS) <> ", triggered at " <> (pack $ show now)]
+    else [] -- this is not elegant
+        where averageEPS = eventsInLastTenMinutes `div` (10 * 60)
+              eventsInLastTenMinutes = Prelude.length s
