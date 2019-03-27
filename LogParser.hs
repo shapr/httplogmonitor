@@ -28,10 +28,12 @@ data LogMessage = LM {
     , url       :: [Text]
     , status    :: Int
     , bytes     :: Int
-    }     deriving (Read, Eq, Ord)
+    }     deriving (Read, Eq, Ord, Show)
 
-instance Show LogMessage where
-    show LM{..} = unpack ip
+
+-- instance Show LogMessage where
+showLM :: LogMessage -> String
+showLM LM{..} = unpack ip
                   <> " - "
                   <> unpack host
                   <> " ["
@@ -39,7 +41,7 @@ instance Show LogMessage where
                   <> "] \""
                   <> unpack method
                   <> " "
-                  <> "/" ++ (intercalate "/" (unpack <$> url))
+                  <> "/" ++ intercalate "/" (unpack <$> url)
                   <> " HTTP/1.0\" "
                   <> show status
                   <> " "
