@@ -2,14 +2,15 @@
 {-# LANGUAGE RecordWildCards   #-}
 module LogParser where
 
+import qualified Chronos
 import           Data.Attoparsec.Text (Parser, char, decimal, string)
 import qualified Data.Attoparsec.Text as AT
 import           Data.List            (intercalate)
 import qualified Data.Set             as S
 import           Data.Text            hiding (intercalate)
-import           Data.Time.Clock
-import           Data.Time.Format
-
+import           Net.Types            (IPv4)
+import qualified Net.IPv4             as IPv4
+import           Chronos.Types        (Datetime,SubsecondPrecision(..))
 
 {-
 host or ip is up to first space,
@@ -21,23 +22,22 @@ then ? perhaps length?
 -}
 
 data LogMessage = LM {
-      ip        :: Text
+      ip        :: IPv4
     , host      :: Text
-    , timestamp :: UTCTime
+    , timestamp :: Datetime
     , method    :: Text
     , url       :: [Text]
     , status    :: Int
     , bytes     :: Int
     }     deriving (Read, Eq, Ord, Show)
 
-
 -- instance Show LogMessage where
 showLM :: LogMessage -> String
-showLM LM{..} = unpack ip
+showLM LM{..} = unpack (IPv4.encode ip)
                   <> " - "
                   <> unpack host
                   <> " ["
-                  <> formatTime defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" timestamp
+                  <> unpack (Chronos.encode_DmyHMS (SubsecondPrecisionFixed 0) Chronos.w3c timestamp)
                   <> "] \""
                   <> unpack method
                   <> " "
@@ -47,17 +47,20 @@ showLM LM{..} = unpack ip
                   <> " "
                   <> show bytes
 
+w3c :: Parser Datetime
+w3c = Chronos.parser_DmyHMS Chronos.w3c
+
 testline1 = "127.0.0.1 - james [09/May/2018:16:00:39 +0000] \"GET /report HTTP/1.0\" 200 123" :: Text
 testline2 = "127.0.0.1 - frank [09/May/2018:16:00:42 +0000] \"POST /api/user HTTP/1.0\" 200 34" :: Text
 testline3 = "127.0.0.1 - frank [09/Jan/2018:16:00:42 +0000] \"POST /api/user?login=shae HTTP/1.0\" 200 34" :: Text
 
 pLogMessage :: Parser LogMessage
 pLogMessage = LM <$>
-              AT.takeWhile (/= ' ') -- ip
+              IPv4.parser --AT.takeWhile (/= ' ') -- ip
               <* string " - " -- drop separator
               <*> AT.takeWhile (/= ' ')  -- host
               <* string " ["
-              <*> pUTCTime  -- timestamp
+              <*> w3c  -- timestamp
               <* string "] \""
               <*> AT.takeWhile (/= ' ') -- HTTP Method
               <* char ' '
@@ -69,13 +72,6 @@ pLogMessage = LM <$>
               <*> decimal -- response code
               <* char ' '
               <*> decimal  -- length?
-
--- parseTimeOrError True defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" "09/May/2018:16:00:39 +0000" :: UTCTime
-pUTCTime :: AT.Parser UTCTime
-pUTCTime = do
-  chars <- AT.takeWhile (/= ']')
-  -- return $ parseTimeOrError True defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" (unpack chars)
-  parseTimeM True defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" (unpack chars)
 
 -- turns /root/dir1/dir2 int ["root","dir1","dir2"]
 pSections :: AT.Parser [Text]
@@ -93,6 +89,14 @@ fromRight _         = error "you did something wrong"
 
 eventSet t = S.fromList . fromRight $ AT.parseOnly (pLogMessage `AT.sepBy` AT.string "\n") t
 
+{-
+-- parseTimeOrError True defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" "09/May/2018:16:00:39 +0000" :: UTCTime
+pUTCTime :: AT.Parser UTCTime
+pUTCTime = do
+  chars <- AT.takeWhile (/= ']')
+  -- return $ parseTimeOrError True defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" (unpack chars)
+  parseTimeM True defaultTimeLocale "%d/%b/%Y:%H:%M:%S +0000" (unpack chars)
+
 lastTenMinutes :: UTCTime -> S.Set LogMessage -> S.Set LogMessage
 lastTenMinutes now evSet = S.filter ((>= tenminutesago) . timestamp) evSet -- this needs lenses
     where tenminutesago = addUTCTime (-10 * 60) now
@@ -105,3 +109,4 @@ detectAlert s threshold now =
     else [] -- this is not elegant
         where averageEPS = eventsInLastTenMinutes `div` (10 * 60)
               eventsInLastTenMinutes = Prelude.length s
+-}

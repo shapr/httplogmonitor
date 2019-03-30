@@ -33,7 +33,8 @@ library
     , containers >= 0.5 && < 0.7
     , hinotify >= 0.4
     , text >= 1.2 && < 1.3
-    , time >= 1.8.0.2
+    , chronos >= 1.0 && < 1.1
+    , ip >= 1.4.1 && < 1.6
 
 executable httplogmonitor
   hs-source-dirs:
@@ -51,7 +52,6 @@ executable httplogmonitor
     , directory
     , hinotify >= 0.4
     , text >= 1.2 && < 1.3
-    , time >= 1.8 && < 1.9
   default-language:
     Haskell2010
 
@@ -73,6 +73,7 @@ test-suite test-httplogmonitor
     , httplogmonitor
     , quickcheck-instances
     , text >= 1.2 && < 1.3
-    , time >= 1.8 && < 1.9
+    , chronos >= 1.0 && < 1.1
+    , ip >= 1.4.1 && < 1.6
   default-language:
     Haskell2010
